@@ -1,0 +1,180 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+}
+
+<div class="row">
+    <div class="col-lg-12">
+        <h2>Index</h2>
+    </div>
+    <div class="col-lg-12">
+        <button type="button" class="btn btn-sm btn-primary" id="btnNuevo">Nuevo Movimiento</button>
+    </div>
+    <div class="col-lg-12">
+        <table class="table table-striped- table-bordered table-hover table-checkable" id="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Producto</th>
+                    <th>Categoria</th>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Saldo Anterior</th>
+                    <th>Entrada</th>
+                    <th>Salida</th>
+                    <th>Saldo Actual</th>
+                    <th>Opciones</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+    <div class="modal" tabindex="-1" role="dialog" id="ModalMovimientoNuevo">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">NUEVO MOVIMIENTO</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <form id="frmNuevo">
+                                <div class="form-group">
+                                    <label>PRODUCTO</label>
+                                    <select class="form-control" name="IdProducto" id="IdProducto">
+                                        <option value="1">Entrada</option>
+                                        <option value="0">Salida</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>TIPO MOVIMIENTO</label>
+                                    <select class="form-control" name="Tipo">
+                                        <option value="1">Entrada</option>
+                                        <option value="0">Salida</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="exampleInputEmail1">CANTIDAD</label>
+                                    <input type="number" class="form-control" name="Cantidad" id="Cantidad" required>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="btnGuardar">Guardar</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section js{
+
+    <script>
+
+        $(document).ready(function () {
+            $(document).on('click', "#btnNuevo", function () {
+                $("#ModalMovimientoNuevo").modal();
+                $.ajax({
+                    url: "/Producto/ProductoListarJson",
+                    type: 'GET',
+                    success: function (response) {
+                        let { data } = response;
+
+                        console.log(data)
+                        let contenedor = $("#IdProducto");
+                        contenedor.html("");
+                        data.map((row) => {
+                            contenedor.append(`<option value="${row.Id}">${row.Nombre}</option>`)
+                        })
+                    }
+                });
+            })
+            $(document).on('click', "#btnGuardar", function () {
+                let cantidad = $("#Cantidad").val();
+                if (cantidad > 0) {
+                    let data = $("#frmNuevo").serializeFormJSON();
+                    $.ajax({
+                        url: "/Movimiento/MovimientoRegistrarJson",
+                        type: 'POST',
+                        data: data,
+                        success: function (response) {
+                            let { respuesta, mensaje } = response;
+                            if (respuesta) {
+                                alert(mensaje);
+                                $("#ModalMovimientoNuevo").modal('hide');
+                                ListarMovimientos();
+                            } else {
+                                alert(mensaje);
+                            }
+                        }
+                    });
+                } else {
+                    alert("Ingrese una cantidad valida")
+                }
+            })
+            $(document).on('click', '.btnEliminar', function () {
+                let Id = $(this).data('id');
+                $.ajax({
+                    url: "/Movimiento/MovimientoEliminarJson",
+                    type: 'POST',
+                    data: {
+                        Id: Id
+                    },
+                    success: function (response) {
+                        let { respuesta, mensaje } = response;
+                        if (respuesta) {
+                            alert(mensaje);                            
+                            ListarMovimientos();
+                        } else {
+                            alert(mensaje);
+                        }
+                    }
+                });
+            })
+            const ListarMovimientos = () => {
+                $.ajax({
+                    url: "/Movimiento/MovimientoListarJson",
+                    type: 'GET',
+                    success: function (response) {
+                        let { data } = response;
+
+                        console.log(data)
+                        let contenedor = $("#table tbody");
+                        contenedor.html("");
+                        data.map((row) => {
+                            contenedor.append(`
+                            <tr>
+                                <td>${row.Id}</td>
+                                <td>${row.NombreProducto}</td>
+                                <td>${row.NombreCategoria}</td>
+                                <td>${row.Fecha}</td>
+                                <td>${row.TipoNombre}</td>
+                                <td>${row.SaldoAnterior}</td>
+                                <td>${row.Entrada}</td>
+                                <td>${row.Salida}</td>
+                                <td>${row.SaldoActual}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-danger btnEliminar" data-id="${row.Id}">Eliminar</button>                                    
+                                </td>
+                            </tr>
+                            `)
+                        })
+                    }
+                });
+            }
+            ListarMovimientos();
+        });
+
+    </script>
+
+}
+
+
+
